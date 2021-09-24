@@ -16,6 +16,7 @@ import org.cloudbus.cloudsim.schedulers.vm.VmSchedulerTimeShared
 import org.cloudbus.cloudsim.utilizationmodels.UtilizationModelDynamic
 import org.cloudbus.cloudsim.vms.{Vm, VmCost, VmSimple}
 import org.cloudsimplus.autoscaling.HorizontalVmScalingSimple
+import org.cloudbus.cloudsim.datacenters.network.NetworkDatacenter
 import org.cloudsimplus.builders.tables.CloudletsTableBuilder
 
 import collection.JavaConverters.*
@@ -117,7 +118,7 @@ object IaaSDatacenterSim {
 
     val hostList: List[Host] = createHost(hostPes, hostMIPS, numOfHosts, hostRam, hostStorage, hostBW)
 
-    val datacenter: Datacenter = new DatacenterSimple(cloudsim, hostList.asJava, selectVmAllocationPolicy(vmAllocationPolicy))
+    val datacenter: Datacenter = new NetworkDatacenter(cloudsim, hostList.asJava, selectVmAllocationPolicy(vmAllocationPolicy))
 
     datacenter.getCharacteristics()
       .setArchitecture(arch)

@@ -21,14 +21,16 @@ import collection.JavaConverters.*
 class SaaSDatacenterSim
 
 object SaaSDatacenterSim{
-  val config: Config = ConfigFactory.load("simulationPaaS" + ".conf")
+  val config: Config = ConfigFactory.load("simulationSaaS" + ".conf")
   val logger = CreateLogger(classOf[PaaSDatacenterSim])
   val cloudsim = new CloudSim();
 
-  val datacenterPaaS = createPaaSDatacenter("dc");
-  val broker0 = new DatacenterBrokerSimple(cloudsim);
-
   def Start() = {
+    val datacenter0 = createDatacenter(cloudsim);
+
+    //Creates a broker that is a software acting on behalf a cloud customer to manage his/her VMs and Cloudlets
+    val broker0 = new DatacenterBrokerSimple(cloudsim);
+
     // Create VM list
     val vmList = createVms();
 
@@ -42,124 +44,46 @@ object SaaSDatacenterSim{
     cloudsim.start();
 
     new CloudletsTableBuilder(broker0.getCloudletFinishedList()).build();
-    printTotalVmsCost();
   }
 
-  def createPaaSDatacenter(datacenterId: String): Datacenter = {
-    // Get all the datacenter config details
-    val hostRam = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_RAM");
-    val hostStorage = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_STORAGE");
-    val hostBW = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_BW");
-    val hostMIPS = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_MIPS");
-    val hostPes = config.getInt("cloudSimulator." + datacenterId + ".host.HOST_PES");
-    val costPerMem = config.getDouble("cloudSimulator." + datacenterId + ".costPerMem");
-    val costPerStorage = config.getDouble("cloudSimulator." + datacenterId + ".costPerStorage");
-    val costPerBw = config.getDouble("cloudSimulator." + datacenterId + ".costPerBw");
-    val costPerSec = config.getDouble("cloudSimulator." + datacenterId + ".costPerSec");
-    val schedulingInterval = config.getInt("cloudSimulator." + datacenterId + ".SCHEDULING_INTERVAL");
-    val arch = config.getString("cloudSimulator." + datacenterId + ".arch");
-    val os = config.getString("cloudSimulator." + datacenterId + ".os");
-    val vmm = config.getString("cloudSimulator." + datacenterId + ".vmm");
-    val numOfHosts = config.getInt("cloudSimulator." + datacenterId + ".numHosts")
+  def createDatacenter(cloudsim: CloudSim): Datacenter = {
+    val hostRam = config.getLong("cloudSimulator.host.HOST_RAM");
+    val hostStorage = config.getLong("cloudSimulator.host.HOST_STORAGE");
+    val hostBW = config.getLong("cloudSimulator.host.HOST_BW");
+    val hostMIPS = config.getLong("cloudSimulator.host.HOST_MIPS");
+    val hostPes = config.getInt("cloudSimulator.host.HOST_PES");
 
-    val hostList: List[Host] = createHost(hostPes, hostMIPS, numOfHosts, hostRam, hostStorage, hostBW)
+    val pesList = (1 to hostPes).map(pl => new PeSimple(hostMIPS));
 
-    val datacenter: Datacenter = new DatacenterSimple(cloudsim, hostList.asJava)
-      .setSchedulingInterval(schedulingInterval)
-
-    datacenter.getCharacteristics()
-      .setArchitecture(arch)
-      .setOs(os)
-      .setVmm(vmm)
-      .setCostPerSecond(costPerSec)
-      .setCostPerBw(costPerBw)
-      .setCostPerMem(costPerMem)
-      .setCostPerStorage(costPerStorage)
-
-    return datacenter;
-  }
-
-  def createHost(hostPes: Int, hostMIPS: Long, numOfHosts: Int,
-                 hostRam: Long, hostStorage: Long, hostBW: Long): List[Host] = {
-
-    // A Machine contains one or more PEs or CPUs/Cores. We iterate over the number of host Processing elements
-    val pesList = (1 to hostPes).map(pl => new PeSimple(hostMIPS, new PeProvisionerSimple()));
-
-    //
-    val hostList = (1 to numOfHosts).map(hl =>
-      new HostSimple(hostRam, hostStorage, hostBW, pesList.asJava)
-        .setRamProvisioner(new ResourceProvisionerSimple())
-        .setBwProvisioner(new ResourceProvisionerSimple())
-        .setVmScheduler(new VmSchedulerTimeShared())
-    ).toList
+    val hostList = (1 to config.getInt("cloudSimulator.host.HOSTS")).map(hl =>
+      new HostSimple(hostRam, hostStorage, hostBW, pesList.asJava)).toList
 
     logger.info(s"Created one processing element: $hostPes")
     logger.info(s"Created one host: $hostList")
-
-    return hostList;
+    return new DatacenterSimple(cloudsim, hostList.asJava);
   }
 
   def createVms(): List[Vm] = {
-    val hostMIPS: Long = config.getLong("cloudSimulator.vm.VM_MIPS");
+    val hostMIPS: Long = config.getLong("cloudSimulator.host.HOST_MIPS");
     val vmPes: Long = config.getLong("cloudSimulator.vm.VM_PES");
     val vmRam: Long = config.getLong("cloudSimulator.vm.VM_RAM");
     val vmBW: Long = config.getLong("cloudSimulator.vm.VM_BW");
     val vmSize: Long = config.getLong("cloudSimulator.vm.VM_SIZE");
     val vmNum: Int = config.getInt("cloudSimulator.vm.VMS");
 
-    val vmList = (1 to vmNum).map(vm => new VmSimple(hostMIPS, vmPes)
-      .setSize(vmSize).setBw(vmBW).setRam(vmRam)
-      .setCloudletScheduler(new CloudletSchedulerSpaceShared())).toList
-
+    val vmList = (1 to vmNum).map(vm => new VmSimple(hostMIPS, vmPes).setSize(vmSize).setBw(vmBW).setRam(vmRam)).toList
     logger.info(s"Created one virtual machine: $vmList")
     return vmList.toList;
   }
 
   def createCloudlets(): List[Cloudlet] = {
-    val utilizationRatio: Double = config.getDouble("cloudSimulator.UTILIZATIONRATIO")
-    val numOfCloudlet: Int = config.getInt("cloudSimulator.cloudlet.CLOUDLETS")
-    val cloudletLength: Long = config.getLong("cloudSimulator.cloudlet.CLOUDLET_LENGTH")
-    val cloudletPes: Int = config.getInt("cloudSimulator.cloudlet.CLOUDLET_PES")
+    val utilizationModel = new UtilizationModelDynamic(config.getDouble("cloudSimulator.UTILIZATIONRATIO"));
 
-    val utilizationModel = new UtilizationModelDynamic(utilizationRatio);
-
-    val cloudlet = (1 to numOfCloudlet).map(cl =>
-      new CloudletSimple(cloudletLength,
-        cloudletPes, utilizationModel)).toList
+    val cloudlet = (1 to config.getInt("cloudSimulator.cloudlet.CLOUDLETS")).map(cl =>
+      new CloudletSimple(config.getLong("cloudSimulator.cloudlet.CLOUDLET_LENGTH"),
+        config.getInt("cloudSimulator.cloudlet.CLOUDLET_PES"), utilizationModel)).toList
     logger.info(s"Created a list of cloudlets1: $cloudlet")
 
     return cloudlet.toList;
-  }
-
-  /**
-   * Computes and print the cost ($) of resources (processing, bw, memory, storage)
-   * for each VM inside the datacenter.
-   */
-  def printTotalVmsCost(): Unit = {
-    var totalCost: Double = 0.0
-    var processingTotalCost: Double = 0.0
-    var totalNonIdleVms: Double = 0.0
-    var memoryTotaCost: Double = 0.0
-    var storageTotalCost: Double = 0.0
-    var bwTotalCost: Double = 0.0
-
-    val vmList: List[Vm] = broker0.getVmCreatedList().asScala.toList
-
-    vmList.map((vm) => {
-      val cost: VmCost = new VmCost(vm);
-      processingTotalCost += cost.getProcessingCost()
-      memoryTotaCost += cost.getMemoryCost()
-      storageTotalCost += cost.getStorageCost()
-      bwTotalCost += cost.getBwCost()
-      totalCost += cost.getTotalCost()
-      totalNonIdleVms = totalNonIdleVms + {
-        if (vm.getTotalExecutionTime > 0) 1 else 0
-      }
-      println(cost)
-    });
-
-    println(f"Total cost ($$) for ${totalNonIdleVms.asInstanceOf[Int]}%3d created VMs from " +
-      f"${broker0.getVmsNumber}%3d in DC ${datacenterPaaS.getId}%d: ${processingTotalCost}%8.2f$$ " +
-      f"${memoryTotaCost}%13.2f$$ ${storageTotalCost}%17.2f$$ ${bwTotalCost}%12.2f$$ ${totalCost}%15.2f$$")
   }
 }

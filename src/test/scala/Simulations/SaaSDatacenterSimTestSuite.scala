@@ -1,5 +1,0 @@
-package Simulations
-
-class SaaSDatacenterSimTestSuite {
-
-}

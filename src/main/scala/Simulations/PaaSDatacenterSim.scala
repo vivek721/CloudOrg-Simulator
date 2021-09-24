@@ -16,7 +16,8 @@ import org.cloudbus.cloudsim.schedulers.vm.VmSchedulerTimeShared
 import org.cloudbus.cloudsim.utilizationmodels.UtilizationModelDynamic
 import org.cloudbus.cloudsim.vms.{Vm, VmCost, VmSimple}
 import org.cloudsimplus.builders.tables.CloudletsTableBuilder
-import collection.JavaConverters.*
+
+import scala.collection.JavaConverters.*
 
 class PaaSDatacenterSim
 
@@ -25,7 +26,7 @@ object PaaSDatacenterSim {
   val logger = CreateLogger(classOf[PaaSDatacenterSim])
   val cloudsim = new CloudSim();
 
-  val datacenterPaaS = createPaaSDatacenter("dc");
+  val datacenterPaaS = createPaaSDatacenter();
   val broker0 = new DatacenterBrokerSimple(cloudsim);
 
   def Start() = {
@@ -45,32 +46,24 @@ object PaaSDatacenterSim {
     printTotalVmsCost();
   }
 
-  def createPaaSDatacenter(datacenterId: String): Datacenter = {
+  def createPaaSDatacenter(): Datacenter = {
     // Get all the datacenter config details
-    val hostRam = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_RAM");
-    val hostStorage = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_STORAGE");
-    val hostBW = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_BW");
-    val hostMIPS = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_MIPS");
-    val hostPes = config.getInt("cloudSimulator." + datacenterId + ".host.HOST_PES");
-    val costPerMem = config.getDouble("cloudSimulator." + datacenterId + ".costPerMem");
-    val costPerStorage = config.getDouble("cloudSimulator." + datacenterId + ".costPerStorage");
-    val costPerBw = config.getDouble("cloudSimulator." + datacenterId + ".costPerBw");
-    val costPerSec = config.getDouble("cloudSimulator." + datacenterId + ".costPerSec");
-    val schedulingInterval = config.getInt("cloudSimulator." + datacenterId + ".SCHEDULING_INTERVAL");
-    val arch = config.getString("cloudSimulator." + datacenterId + ".arch");
-    val os = config.getString("cloudSimulator." + datacenterId + ".os");
-    val vmm = config.getString("cloudSimulator." + datacenterId + ".vmm");
-    val numOfHosts = config.getInt("cloudSimulator." + datacenterId + ".numHosts")
+    val hostRam = config.getLong("cloudSimulator.dc.host.HOST_RAM");
+    val hostStorage = config.getLong("cloudSimulator.dc.host.HOST_STORAGE");
+    val hostBW = config.getLong("cloudSimulator.dc.host.HOST_BW");
+    val hostMIPS = config.getLong("cloudSimulator.dc.host.HOST_MIPS");
+    val hostPes = config.getInt("cloudSimulator.dc.host.HOST_PES");
+    val costPerMem = config.getDouble("cloudSimulator.dc.costPerMem");
+    val costPerStorage = config.getDouble("cloudSimulator.dc.costPerStorage");
+    val costPerBw = config.getDouble("cloudSimulator.dc.costPerBw");
+    val costPerSec = config.getDouble("cloudSimulator.dc.costPerSec");
+    val numOfHosts = config.getInt("cloudSimulator.dc.numHosts")
 
     val hostList: List[Host] = createHost(hostPes, hostMIPS, numOfHosts, hostRam, hostStorage, hostBW)
 
-    val datacenter: Datacenter = new DatacenterSimple(cloudsim, hostList.asJava)
-      .setSchedulingInterval(schedulingInterval)
+    val datacenter: Datacenter = new DatacenterSimple(cloudsim, hostList.asJava);
 
     datacenter.getCharacteristics()
-      .setArchitecture(arch)
-      .setOs(os)
-      .setVmm(vmm)
       .setCostPerSecond(costPerSec)
       .setCostPerBw(costPerBw)
       .setCostPerMem(costPerMem)
@@ -108,8 +101,7 @@ object PaaSDatacenterSim {
     val vmNum: Int = config.getInt("cloudSimulator.vm.VMS");
 
     val vmList = (1 to vmNum).map(vm => new VmSimple(hostMIPS, vmPes)
-      .setSize(vmSize).setBw(vmBW).setRam(vmRam)
-      .setCloudletScheduler(new CloudletSchedulerSpaceShared())).toList
+      .setSize(vmSize).setBw(vmBW).setRam(vmRam)).toList
 
     logger.info(s"Created one virtual machine: $vmList")
     return vmList.toList;
