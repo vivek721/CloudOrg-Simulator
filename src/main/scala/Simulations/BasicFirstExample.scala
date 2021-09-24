@@ -46,17 +46,23 @@ object BasicFirstExample {
     broker0.submitVmList(vmList.asJava);
     broker0.submitCloudletList(cloudletList.asJava);
     logger.info("Starting cloud simulation...")
-    
+
     cloudsim.start();
 
     new CloudletsTableBuilder(broker0.getCloudletFinishedList()).build();
   }
 
   def createDatacenter(cloudsim: CloudSim): Datacenter = {
-    val hostPes = List(new PeSimple(config.getLong("cloudSimulator1.host.HOST_MIPS")));
-    val hostList = List(new HostSimple(config.getLong("cloudSimulator1.host.HOST_RAM"),
-      config.getLong("cloudSimulator1.host.HOST_STORAGE"),
-      config.getLong("cloudSimulator1.host.HOST_BW"), hostPes.asJava))
+    val hostRam = config.getLong("cloudSimulator1.host.HOST_RAM");
+    val hostStorage = config.getLong("cloudSimulator1.host.HOST_STORAGE");
+    val hostBW = config.getLong("cloudSimulator1.host.HOST_BW");
+    val hostMIPS = config.getLong("cloudSimulator1.host.HOST_MIPS");
+    val hostPes = config.getInt("cloudSimulator1.host.HOST_PES");
+
+    val pesList = (1 to hostPes).map(pl => new PeSimple(hostMIPS));
+
+    val hostList = (1 to config.getInt("cloudSimulator1.host.HOSTS")).map(hl =>
+      new HostSimple(hostRam, hostStorage, hostBW, pesList.asJava)).toList
 
     logger.info(s"Created one processing element: $hostPes")
     logger.info(s"Created one host: $hostList")
@@ -64,24 +70,27 @@ object BasicFirstExample {
   }
 
   def createVms(): List[Vm] = {
-    val vmList = List(new VmSimple(config.getLong("cloudSimulator1.host.HOST_MIPS")
-      , (config.getLong("cloudSimulator1.vm.VM_PES")))
-      .setRam(config.getLong("cloudSimulator1.vm.VM_RAM"))
-      .setSize(config.getLong("cloudSimulator1.vm.VM_SIZE"))
-      .setBw(config.getLong("cloudSimulator1.vm.VM_BW")))
+    val hostMIPS: Long = config.getLong("cloudSimulator1.host.HOST_MIPS");
+    val vmPes: Long = config.getLong("cloudSimulator1.vm.VM_PES");
+    val vmRam: Long = config.getLong("cloudSimulator1.vm.VM_RAM");
+    val vmBW: Long = config.getLong("cloudSimulator1.vm.VM_BW");
+    val vmSize: Long = config.getLong("cloudSimulator1.vm.VM_SIZE");
+    val vmNum: Int = config.getInt("cloudSimulator1.vm.VMS");
+
+    val vmList = (1 to vmNum).map(vm => new VmSimple(hostMIPS, vmPes).setSize(vmSize).setBw(vmBW).setRam(vmRam)).toList
     logger.info(s"Created one virtual machine: $vmList")
-    return vmList;
+    return vmList.toList;
   }
 
   def createCloudlets(): List[Cloudlet] = {
     val utilizationModel = new UtilizationModelDynamic(config.getDouble("cloudSimulator1.UTILIZATIONRATIO"));
-    val cloudlet = new CloudletSimple(config.getLong("cloudSimulator1.cloudlet.CLOUDLET_LENGTH"),
-      config.getInt("cloudSimulator1.cloudlet.CLOUDLET_PES"), utilizationModel) ::
-      new CloudletSimple(config.getLong("cloudSimulator1.cloudlet.CLOUDLET_LENGTH"),
-        config.getInt("cloudSimulator1.cloudlet.CLOUDLET_PES"), utilizationModel) :: Nil;
 
-    logger.info(s"Created a list of cloudlets: $cloudlet")
-    return cloudlet;
+    val cloudlet = (1 to config.getInt("cloudSimulator1.cloudlet.CLOUDLETS")).map(cl =>
+      new CloudletSimple(config.getLong("cloudSimulator1.cloudlet.CLOUDLET_LENGTH"),
+        config.getInt("cloudSimulator1.cloudlet.CLOUDLET_PES"), utilizationModel)).toList
+    logger.info(s"Created a list of cloudlets1: $cloudlet")
+
+    return cloudlet.toList;
   }
 
 }
