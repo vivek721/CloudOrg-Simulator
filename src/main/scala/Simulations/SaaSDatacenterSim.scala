@@ -2,8 +2,8 @@ package Simulations
 
 import HelperUtils.{CreateLogger, ObtainConfigReference}
 import com.typesafe.config.{Config, ConfigFactory}
-import org.cloudbus.cloudsim.allocationpolicies.{VmAllocationPolicyBestFit, VmAllocationPolicyRoundRobin, VmAllocationPolicySimple}
-import org.cloudbus.cloudsim.brokers.{DatacenterBrokerBestFit, DatacenterBrokerFirstFit, DatacenterBrokerSimple}
+import org.cloudbus.cloudsim.allocationpolicies.VmAllocationPolicySimple
+import org.cloudbus.cloudsim.brokers.DatacenterBrokerSimple
 import org.cloudbus.cloudsim.cloudlets.{Cloudlet, CloudletSimple}
 import org.cloudbus.cloudsim.core.CloudSim
 import org.cloudbus.cloudsim.datacenters.{Datacenter, DatacenterSimple}
@@ -15,40 +15,20 @@ import org.cloudbus.cloudsim.schedulers.cloudlet.{CloudletSchedulerSpaceShared, 
 import org.cloudbus.cloudsim.schedulers.vm.VmSchedulerTimeShared
 import org.cloudbus.cloudsim.utilizationmodels.UtilizationModelDynamic
 import org.cloudbus.cloudsim.vms.{Vm, VmCost, VmSimple}
-import org.cloudsimplus.autoscaling.HorizontalVmScalingSimple
 import org.cloudsimplus.builders.tables.CloudletsTableBuilder
-
 import collection.JavaConverters.*
 
-/**
- * This Simulation is done for showing the functionality of Infrastructure as a Service.
- *
- * All parameters are specified in the simulationIaaS.conf file.
- *
- * The code entry point is the runSimulation method in Simulation.scala.
- *
- * @author Vivek Mishra
- *
- */
+class SaaSDatacenterSim
 
-class IaaSDatacenterSim
-
-object IaaSDatacenterSim {
-  val config: Config = ConfigFactory.load("simulationIaaS" + ".conf")
-  val logger = CreateLogger(classOf[IaaSDatacenterSim])
+object SaaSDatacenterSim{
+  val config: Config = ConfigFactory.load("simulationPaaS" + ".conf")
+  val logger = CreateLogger(classOf[PaaSDatacenterSim])
   val cloudsim = new CloudSim();
 
-  val datacenterIaaS1 = createIaaSDatacenter("dc1");
-  val datacenterIaaS2 = createIaaSDatacenter("dc2");
-
-  // Creates a broker that is a software acting on behalf a cloud customer to manage his/her VMs and Cloudlets
-
-  val broker0 = createBrokerWithSelectedPolicy();
+  val datacenterPaaS = createPaaSDatacenter("dc");
+  val broker0 = new DatacenterBrokerSimple(cloudsim);
 
   def Start() = {
-    configureNetwork("dc1");
-    configureNetwork("dc2");
-
     // Create VM list
     val vmList = createVms();
 
@@ -65,39 +45,7 @@ object IaaSDatacenterSim {
     printTotalVmsCost();
   }
 
-  def createBrokerWithSelectedPolicy() = {
-    val brokerPolicy: Int = config.getInt("cloudSimulator.BROKER_IMPLEMENTATION");
-    logger.info(s"broker policy Policy choosen: $brokerPolicy")
-
-    brokerPolicy match {
-      case 1 => new DatacenterBrokerSimple(cloudsim)
-      case 2 => new DatacenterBrokerBestFit(cloudsim)
-      case 3 => new DatacenterBrokerFirstFit(cloudsim)
-      case _ => new DatacenterBrokerSimple(cloudsim)
-    }
-  }
-
-  def configureNetwork(datacenterId: String): Unit = {
-    val networkBW: Double = config.getDouble("cloudSimulator." + datacenterId + ".NETWORK_BW");
-    val networkLatency: Double = config.getDouble("cloudSimulator." + datacenterId + ".NETWORK_LATENCY");
-
-    //Configure network by mapping CloudSim entities to BRITE entities
-    val networkTopology: NetworkTopology = new BriteNetworkTopology();
-    cloudsim.setNetworkTopology(networkTopology);
-    networkTopology.addLink(datacenterIaaS1, broker0, networkBW, networkLatency);
-    networkTopology.addLink(datacenterIaaS2, broker0, networkBW, networkLatency);
-  }
-
-  /**
-   *
-   * This method is used to create Datacenters, the configuration for the datacenter is loaded from
-   * the config file.
-   * Furthermore, this method relies on createHost in order to create Host nodes inside a datacenter.
-   *
-   * @param datacenterId datacenterId of the DC (Datacenter) to be created.
-   * @return Created Datacenter instance.
-   */
-  def createIaaSDatacenter(datacenterId: String): Datacenter = {
+  def createPaaSDatacenter(datacenterId: String): Datacenter = {
     // Get all the datacenter config details
     val hostRam = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_RAM");
     val hostStorage = config.getLong("cloudSimulator." + datacenterId + ".host.HOST_STORAGE");
@@ -113,11 +61,11 @@ object IaaSDatacenterSim {
     val os = config.getString("cloudSimulator." + datacenterId + ".os");
     val vmm = config.getString("cloudSimulator." + datacenterId + ".vmm");
     val numOfHosts = config.getInt("cloudSimulator." + datacenterId + ".numHosts")
-    val vmAllocationPolicy: Int = config.getInt("cloudSimulator." + datacenterId + ".VM_ALLOCATION_POLICY");
 
     val hostList: List[Host] = createHost(hostPes, hostMIPS, numOfHosts, hostRam, hostStorage, hostBW)
 
-    val datacenter: Datacenter = new DatacenterSimple(cloudsim, hostList.asJava, selectVmAllocationPolicy(vmAllocationPolicy))
+    val datacenter: Datacenter = new DatacenterSimple(cloudsim, hostList.asJava)
+      .setSchedulingInterval(schedulingInterval)
 
     datacenter.getCharacteristics()
       .setArchitecture(arch)
@@ -131,29 +79,6 @@ object IaaSDatacenterSim {
     return datacenter;
   }
 
-  def selectVmAllocationPolicy(vmAllocationPolicy: Int) = {
-
-    logger.info(s"Vm Allocation Policy choosen: $vmAllocationPolicy")
-
-    vmAllocationPolicy match {
-      case 1 => new VmAllocationPolicySimple()
-      case 2 => new VmAllocationPolicyBestFit()
-      case 3 => new VmAllocationPolicyRoundRobin()
-      case _ => new VmAllocationPolicySimple()
-    }
-  }
-
-  /**
-   * Simulate host creation by providing different inputs
-   *
-   * @param hostPes     specifies host processing elements
-   * @param hostMIPS    specifies host processing speed in Million Instuctions per sec
-   * @param numOfHosts  Specifies number of hosts in the datacenter
-   * @param hostRam     specifies host Ram in Mbs
-   * @param hostStorage specifies host storage
-   * @param hostBW      specifies host's bandwidth
-   * @return hostList         Returns List[Host]
-   */
   def createHost(hostPes: Int, hostMIPS: Long, numOfHosts: Int,
                  hostRam: Long, hostStorage: Long, hostBW: Long): List[Host] = {
 
@@ -174,13 +99,6 @@ object IaaSDatacenterSim {
     return hostList;
   }
 
-  /**
-   * Simulate the IaaS scenarios by providing the different Configurations for Vms
-   *
-   * cloudletScheduler  for scheduling cloudlet to Vms
-   *
-   * @return retruns List[Vm]
-   */
   def createVms(): List[Vm] = {
     val hostMIPS: Long = config.getLong("cloudSimulator.vm.VM_MIPS");
     val vmPes: Long = config.getLong("cloudSimulator.vm.VM_PES");
@@ -191,21 +109,12 @@ object IaaSDatacenterSim {
 
     val vmList = (1 to vmNum).map(vm => new VmSimple(hostMIPS, vmPes)
       .setSize(vmSize).setBw(vmBW).setRam(vmRam)
-      .setCloudletScheduler(new CloudletSchedulerSpaceShared())
-      .setHorizontalScaling(new HorizontalVmScalingSimple())).toList
-
+      .setCloudletScheduler(new CloudletSchedulerSpaceShared())).toList
 
     logger.info(s"Created one virtual machine: $vmList")
     return vmList.toList;
   }
 
-  /**
-   * Simulate the IaaS scenarios by providing the different Configurations for couldlets
-   *
-   * utilizationModel   utilization model for RAM,BW and storage of cloudlets
-   *
-   * @return List[Cloudlet]
-   */
   def createCloudlets(): List[Cloudlet] = {
     val utilizationRatio: Double = config.getDouble("cloudSimulator.UTILIZATIONRATIO")
     val numOfCloudlet: Int = config.getInt("cloudSimulator.cloudlet.CLOUDLETS")
@@ -250,8 +159,7 @@ object IaaSDatacenterSim {
     });
 
     println(f"Total cost ($$) for ${totalNonIdleVms.asInstanceOf[Int]}%3d created VMs from " +
-      f"${broker0.getVmsNumber}%3d in DC   : ${processingTotalCost}%8.2f$$ " +
+      f"${broker0.getVmsNumber}%3d in DC ${datacenterPaaS.getId}%d: ${processingTotalCost}%8.2f$$ " +
       f"${memoryTotaCost}%13.2f$$ ${storageTotalCost}%17.2f$$ ${bwTotalCost}%12.2f$$ ${totalCost}%15.2f$$")
   }
 }
-
