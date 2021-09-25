@@ -38,9 +38,11 @@ go to “File -> Project Structure”, select “Libraries” on the right-hand 
 In this section the project structure is described. The Scala docs for SaaS, PaaS and IaaS implementation
 can be found below:-
 
-[IaaSDatacenterSim](Docs/api/api/Simulations/IaaSDatacenterSim$.html)
-[PaaSDatacenterSim](Docs/api/api/Simulations/PaaSDatacenterSim$.html)
-[SaaSDatacenterSim](Docs/api/api/Simulations/SaaSDatacenterSim$.html)
+[IaaSDatacenterSim Doc](Docs/api/api/Simulations/IaaSDatacenterSim$.html)
+
+[PaaSDatacenterSim Doc](Docs/api/api/Simulations/PaaSDatacenterSim$.html)
+
+[SaaSDatacenterSim Doc](Docs/api/api/Simulations/SaaSDatacenterSim$.html)
 
 #### Simulations
 
