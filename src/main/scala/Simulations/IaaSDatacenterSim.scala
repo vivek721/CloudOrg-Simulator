@@ -66,6 +66,9 @@ object IaaSDatacenterSim {
     printTotalVmsCost();
   }
 
+  /**
+   * this method selects the broker policy as defined in the config file
+   */
   def createBrokerWithSelectedPolicy() = {
     val brokerPolicy: Int = config.getInt("cloudSimulator.BROKER_IMPLEMENTATION");
     logger.info(s"broker policy Policy choosen: $brokerPolicy")
@@ -78,15 +81,20 @@ object IaaSDatacenterSim {
     }
   }
 
+  /**
+   * A simple method showing how to create a Datacenter with a network
+   * topology, running 1 cloudlet on it. Here, instead of using a BRITE file
+   * describing the links, they are just inserted in the code.
+   */
   def configureNetwork(datacenterId: String): Unit = {
-    val networkBW: Double = config.getDouble("cloudSimulator." + datacenterId + ".NETWORK_BW");
-    val networkLatency: Double = config.getDouble("cloudSimulator." + datacenterId + ".NETWORK_LATENCY");
+    val networkBW = config.getDouble("cloudSimulator." + datacenterId + ".NETWORK_BW")
+    val networkLatency = config.getDouble("cloudSimulator." + datacenterId + ".NETWORK_LATENCY")
 
     //Configure network by mapping CloudSim entities to BRITE entities
-    val networkTopology: NetworkTopology = new BriteNetworkTopology();
-    cloudsim.setNetworkTopology(networkTopology);
-    networkTopology.addLink(datacenterIaaS1, broker0, networkBW, networkLatency);
-    networkTopology.addLink(datacenterIaaS2, broker0, networkBW, networkLatency);
+    val networkTopology = new BriteNetworkTopology()
+    cloudsim.setNetworkTopology(networkTopology)
+    networkTopology.addLink(datacenterIaaS1, broker0, networkBW, networkLatency)
+    networkTopology.addLink(datacenterIaaS2, broker0, networkBW, networkLatency)
   }
 
   /**
@@ -132,6 +140,9 @@ object IaaSDatacenterSim {
     return datacenter;
   }
 
+  /**
+   * this method selects the VM allocation policy as defined in the config file
+   */
   def selectVmAllocationPolicy(vmAllocationPolicy: Int) = {
 
     logger.info(s"Vm Allocation Policy choosen: $vmAllocationPolicy")

@@ -11,8 +11,8 @@ object Simulation:
     //    BasicCloudSimPlusExample.Start()
     //    BasicFirstExample.Start()
     IaaSDatacenterSim.Start()
-//    PaaSDatacenterSim.Start()
-//    SaaSDatacenterSim.Start()
+    PaaSDatacenterSim.Start()
+    SaaSDatacenterSim.Start()
     logger.info("Finished cloud simulation...")
 
 class Simulation

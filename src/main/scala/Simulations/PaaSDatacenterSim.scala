@@ -19,6 +19,17 @@ import org.cloudsimplus.builders.tables.CloudletsTableBuilder
 
 import scala.collection.JavaConverters.*
 
+/**
+ * This Simulation is done for showing the functionality of Platform as a Service.
+ *
+ * All parameters are specified in the simulationPaaS.conf file.
+ *
+ * The code entry point is the runSimulation method in Simulation.scala.
+ *
+ * @author Vivek Mishra
+ *
+ */
+
 class PaaSDatacenterSim
 
 object PaaSDatacenterSim {
@@ -46,6 +57,14 @@ object PaaSDatacenterSim {
     printTotalVmsCost();
   }
 
+  /**
+   *
+   * This method is used to create Datacenters, the configuration for the datacenter is loaded from
+   * the config file.
+   * Furthermore, this method relies on createHost in order to create Host nodes inside a datacenter.
+   *
+   * @return Created Datacenter instance.
+   */
   def createPaaSDatacenter(): Datacenter = {
     // Get all the datacenter config details
     val hostRam = config.getLong("cloudSimulator.dc.host.HOST_RAM");
@@ -72,6 +91,17 @@ object PaaSDatacenterSim {
     return datacenter;
   }
 
+  /**
+   * Simulate host creation by providing different inputs
+   *
+   * @param hostPes     specifies host processing elements
+   * @param hostMIPS    specifies host processing speed in Million Instuctions per sec
+   * @param numOfHosts  Specifies number of hosts in the datacenter
+   * @param hostRam     specifies host Ram in Mbs
+   * @param hostStorage specifies host storage
+   * @param hostBW      specifies host's bandwidth
+   * @return hostList         Returns List[Host]
+   */
   def createHost(hostPes: Int, hostMIPS: Long, numOfHosts: Int,
                  hostRam: Long, hostStorage: Long, hostBW: Long): List[Host] = {
 
@@ -92,6 +122,13 @@ object PaaSDatacenterSim {
     return hostList;
   }
 
+  /**
+   * Simulate the IaaS scenarios by providing the different Configurations for Vms
+   *
+   * cloudletScheduler  for scheduling cloudlet to Vms
+   *
+   * @return retruns List[Vm]
+   */
   def createVms(): List[Vm] = {
     val hostMIPS: Long = config.getLong("cloudSimulator.vm.VM_MIPS");
     val vmPes: Long = config.getLong("cloudSimulator.vm.VM_PES");
@@ -107,6 +144,13 @@ object PaaSDatacenterSim {
     return vmList.toList;
   }
 
+  /**
+   * Simulate the IaaS scenarios by providing the different Configurations for couldlets
+   *
+   * utilizationModel   utilization model for RAM,BW and storage of cloudlets
+   *
+   * @return List[Cloudlet]
+   */
   def createCloudlets(): List[Cloudlet] = {
     val utilizationRatio: Double = config.getDouble("cloudSimulator.UTILIZATIONRATIO")
     val numOfCloudlet: Int = config.getInt("cloudSimulator.cloudlet.CLOUDLETS")

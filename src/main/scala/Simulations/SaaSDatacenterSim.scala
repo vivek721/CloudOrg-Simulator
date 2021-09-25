@@ -18,6 +18,18 @@ import org.cloudbus.cloudsim.vms.{Vm, VmCost, VmSimple}
 import org.cloudsimplus.builders.tables.CloudletsTableBuilder
 import collection.JavaConverters.*
 
+
+/**
+ * This Simulation is done for showing the functionality of Software as a Service.
+ *
+ * All parameters are specified in the simulationSaaS.conf file.
+ *
+ * The code entry point is the runSimulation method in Simulation.scala.
+ *
+ * @author Vivek Mishra
+ *
+ */
+
 class SaaSDatacenterSim
 
 object SaaSDatacenterSim{
@@ -46,6 +58,15 @@ object SaaSDatacenterSim{
     new CloudletsTableBuilder(broker0.getCloudletFinishedList()).build();
   }
 
+  /**
+   *
+   * This method is used to create Datacenters, the configuration for the datacenter is loaded from
+   * the config file.
+   * Furthermore, this method relies on createHost in order to create Host nodes inside a datacenter.
+   *
+   * @param cloudsim: CloudSim
+   * @return Created Datacenter instance.
+   */
   def createDatacenter(cloudsim: CloudSim): Datacenter = {
     val hostRam = config.getLong("cloudSimulator.host.HOST_RAM");
     val hostStorage = config.getLong("cloudSimulator.host.HOST_STORAGE");
@@ -63,6 +84,13 @@ object SaaSDatacenterSim{
     return new DatacenterSimple(cloudsim, hostList.asJava);
   }
 
+  /**
+   * Simulate the IaaS scenarios by providing the different Configurations for Vms
+   *
+   * cloudletScheduler  for scheduling cloudlet to Vms
+   *
+   * @return retruns List[Vm]
+   */
   def createVms(): List[Vm] = {
     val hostMIPS: Long = config.getLong("cloudSimulator.host.HOST_MIPS");
     val vmPes: Long = config.getLong("cloudSimulator.vm.VM_PES");
@@ -76,6 +104,13 @@ object SaaSDatacenterSim{
     return vmList.toList;
   }
 
+  /**
+   * Simulate the IaaS scenarios by providing the different Configurations for couldlets
+   *
+   * utilizationModel   utilization model for RAM,BW and storage of cloudlets
+   *
+   * @return List[Cloudlet]
+   */
   def createCloudlets(): List[Cloudlet] = {
     val utilizationModel = new UtilizationModelDynamic(config.getDouble("cloudSimulator.UTILIZATIONRATIO"));
 
