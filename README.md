@@ -27,7 +27,7 @@ This section contains the instructions on how to run the simulations implemented
     ```
 3. Go to the cloned repository location on your terminal and test the program using sbt clean compile test
 4. Go to the cloned repository location on your terminal and compile the program using sbt clean compile run
-5. The output prints a table of results for execution of 500 cloudlets.
+5. The output prints a table of results for execution.
 
 Note: The cloudsim framework has been compiled in jar files and added in the lib/ folder of the project. Please note
 that, although IntellJ IDEA shall recognise the dependencies automatically, this may sometimes fail. When this happens
@@ -38,7 +38,7 @@ go to “File -> Project Structure”, select “Libraries” on the right-hand 
 In this section the project structure is described. The Scala docs for SaaS, PaaS and IaaS implementation
 can be found below:-
 
-[IaaSDatacenterSim Doc](https://vivek721.github.io/CloudOrg-Simulator/)
+[All Simulation Doc](https://vivek721.github.io/CloudOrg-Simulator/)
 
 [PaaSDatacenterSim Doc](Docs/api/api/Simulations/PaaSDatacenterSim$.html)
 
@@ -81,7 +81,9 @@ The following Simulations are provided:
 
 The following test classes are provided:
 
-- SimulationTestSuite
+- SimulationTestSuite: Performed 7 test cases in which checked VMList and cloudlet size should match
+config file size. Checked if the config file is loading properly and also checked if the instance
+of datacenter and cloudlet is correct.
 
 ### Evaluation and Analysis of the results
 
